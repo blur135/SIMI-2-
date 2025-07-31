@@ -1,44 +1,28 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-
 const app = express();
-const PORT = 3000;
 
-// Middleware
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname))); // serve HTML/CSS/JS if needed
 
-// Serve the ports.html file directly
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'ports.html'));
-});
-
-// Save form data to users.json
 app.post('/save', (req, res) => {
-  const userData = req.body;
+  const newData = req.body;
+  const filePath = path.join(__dirname, 'users.json');
 
-  // Read existing data
-  fs.readFile('users.json', 'utf8', (err, data) => {
-    let users = [];
-    if (!err && data) {
-      users = JSON.parse(data);
-    }
+  let users = [];
+  if (fs.existsSync(filePath)) {
+    users = JSON.parse(fs.readFileSync(filePath));
+  }
 
-    // Add new user
-    users.push(userData);
+  users.push(newData);
+  fs.writeFileSync(filePath, JSON.stringify(users, null, 2));
 
-    // Save updated data
-    fs.writeFile('users.json', JSON.stringify(users, null, 2), err => {
-      if (err) {
-        res.status(500).send('❌ Failed to save data');
-      } else {
-        res.send('✅ Registration saved!');
-      }
-    });
-  });
+  res.send('✅ Data saved successfully!');
 });
 
+// ✅ FIXED: use process.env.PORT for Railway or default to 3000
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
